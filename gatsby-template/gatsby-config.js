@@ -1,36 +1,11 @@
-const mdxFeed = require('gatsby-mdx/feed')
-
-const configuration = {
-  // the name of your website
-  title: '{{ authorName }}',
-  // the description of the website (eg. what shows on Google)
-  description: "{{ authorName }}'s blog",
-  // a short bio shown at the bottom of your blog posts
-  // It should complete the sentence: Written by {{ authorName }} ...
-  shortBio: '',
-  // a longer bio showing on the landing page of the blog
-  bio: `{{ bio }}`,
-  author: '{{ authorName }}',
-  githubUrl: '{{ githubURL }}',
-  // replace this by the url where your website will be published
-  siteUrl: 'http://localhost:8000',
-  social: {
-    // leave the social media you do not want to appear as empty strings
-    twitter: '{{ twitterUsername }}',
-    medium: '@{{ mediumUsername }}',
-    facebook: '{{ facebookUsername }}',
-    github: '',
-    linkedin: '',
-    instagram: '',
-  },
-}
+const config = require('./config')
 
 module.exports = {
-  siteMetadata: configuration,
+  siteMetadata: config,
   plugins: [
     'gatsby-plugin-react-helmet',
     {
-      resolve: 'gatsby-mdx',
+      resolve: 'gatsby-plugin-mdx',
       options: {
         extensions: ['.md', '.mdx'],
         gatsbyRemarkPlugins: [
@@ -42,7 +17,6 @@ module.exports = {
               showCaptions: true,
             },
           },
-          'gatsby-remark-prismjs',
           'gatsby-remark-copy-linked-files',
           'gatsby-remark-embed-video',
           {
@@ -60,6 +34,16 @@ module.exports = {
             },
           },
           'gatsby-remark-external-links',
+        ],
+        plugins: [
+          {
+            resolve: 'gatsby-remark-images',
+            options: {
+              maxWidth: 700,
+              backgroundColor: 'transparent',
+              showCaptions: true,
+            },
+          },
         ],
       },
     },
@@ -94,7 +78,49 @@ module.exports = {
     },
     {
       resolve: `gatsby-plugin-feed`,
-      options: mdxFeed,
+      options: {
+        feeds: [
+          {
+            serialize: ({ query: { site, allMdx } }) => {
+              return allMdx.edges.map(edge => {
+                return {
+                  ...edge.node.frontmatter,
+                  url: site.siteMetadata.siteUrl + edge.node.fields.slug,
+                  guid: site.siteMetadata.siteUrl + edge.node.fields.slug,
+                  custom_elements: [{ 'content:encoded': edge.node.html }],
+                }
+              })
+            },
+            query: `
+            {
+              allMdx(
+                filter: { fields: { published: { eq: true } } }
+                limit: 1000,
+                sort: {
+                  order: DESC,
+                  fields: [frontmatter___date]
+                }
+              ) {
+                edges {
+                  node {
+                    frontmatter {
+                      title
+                      description
+                      date
+                    }
+                    fields {
+                      slug
+                    }
+                    html
+                  }
+                }
+              }
+            }
+          `,
+            output: `rss.xml`,
+          },
+        ],
+      },
     },
   ],
 }

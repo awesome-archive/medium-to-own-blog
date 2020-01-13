@@ -1,20 +1,25 @@
 const path = require('path')
 const { createFilePath } = require('gatsby-source-filesystem')
 
-exports.sourceNodes = ({ actions }) => {
+exports.createSchemaCustomization = ({ actions }) => {
   const { createTypes } = actions
   const typeDefs = `
     type Mdx implements Node {
       frontmatter: Frontmatter
+      fields: MdxFields
     }
     type Frontmatter {
       title: String
       description: String
-      date: Date
+      date: Date @dateformat
       published: Boolean
       canonical_link: String
       categories: [String]
       redirect_from: [String]
+    }
+    type MdxFields {
+      slug: String
+      published: Boolean
     }
   `
   createTypes(typeDefs)
@@ -44,6 +49,11 @@ exports.createPages = ({ graphql, actions, reporter, pathPrefix }) => {
   return graphql(
     `
       {
+        site {
+          siteMetadata {
+            siteUrl
+          }
+        }
         allMdx(sort: { fields: [frontmatter___date], order: DESC }) {
           edges {
             node {
@@ -54,6 +64,7 @@ exports.createPages = ({ graphql, actions, reporter, pathPrefix }) => {
               }
               frontmatter {
                 redirect_from
+                title
               }
             }
           }
@@ -87,11 +98,12 @@ exports.createPages = ({ graphql, actions, reporter, pathPrefix }) => {
       }
 
       const pagePath = `${pathPrefix}${node.fields.slug}`
+      const permalink = `${result.data.site.siteMetadata.siteUrl}${node.fields.slug}`
 
       createPage({
         path: pagePath,
         component: path.resolve(`./src/templates/blog-post.js`),
-        context: { id: node.id, previous, next },
+        context: { id: node.id, previous, next, permalink },
       })
 
       if (

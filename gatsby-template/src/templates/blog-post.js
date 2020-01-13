@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, graphql } from 'gatsby'
-import MDXRenderer from 'gatsby-mdx/mdx-renderer'
+import { MDXRenderer } from 'gatsby-plugin-mdx'
 
 import SEO from '../components/seo'
 import Pills from '../components/pills'
@@ -11,14 +11,13 @@ import { formatPostDate, formatReadingTime } from '../utils/dates'
 import './blog-post.css'
 
 export default function PageTemplate({ data: { mdx, site }, pageContext }) {
-  const { previous, next } = pageContext
-  const publicUrl = `${site.siteMetadata.siteUrl}${mdx.fields.slug}`
+  const { previous, next, permalink } = pageContext
 
   return (
     <div>
       <SEO
         title={mdx.frontmatter.title}
-        description={mdx.frontmatter.description}
+        description={mdx.frontmatter.description || mdx.excerpt}
         canonicalLink={mdx.frontmatter.canonical_link}
         keywords={mdx.frontmatter.categories || []}
         meta={[
@@ -45,14 +44,14 @@ export default function PageTemplate({ data: { mdx, site }, pageContext }) {
             <Pills items={mdx.frontmatter.categories} />
           </header>
 
-          <MDXRenderer scope={{ Embed }}>{mdx.code.body}</MDXRenderer>
+          <MDXRenderer scope={{ Embed }}>{mdx.body}</MDXRenderer>
         </article>
         <footer className="container small">
           <small>
             <a
               target="_blank"
               rel="nofollow noopener noreferrer"
-              href={`https://twitter.com/search?q=${publicUrl}`}
+              href={`https://twitter.com/search?q=${permalink}`}
             >
               Discuss on Twitter
             </a>{' '}
@@ -60,9 +59,7 @@ export default function PageTemplate({ data: { mdx, site }, pageContext }) {
             <a
               target="_blank"
               rel="nofollow noopener noreferrer"
-              href={`${site.siteMetadata.githubUrl}/edit/master/content${
-                mdx.fields.slug
-              }index.md`}
+              href={`${site.siteMetadata.githubUrl}/edit/master/content${mdx.fields.slug}index.md`}
             >
               Edit this post on GitHub
             </a>
@@ -115,6 +112,7 @@ export const pageQuery = graphql`
       fields {
         slug
       }
+      excerpt
       timeToRead
       frontmatter {
         title
@@ -123,9 +121,7 @@ export const pageQuery = graphql`
         date(formatString: "MMMM DD, YYYY")
         canonical_link
       }
-      code {
-        body
-      }
+      body
     }
   }
 `

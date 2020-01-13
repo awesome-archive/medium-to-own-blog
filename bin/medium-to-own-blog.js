@@ -5,10 +5,10 @@ const inquirer = require('inquirer')
 const ora = require('ora')
 const JSZip = require('jszip')
 const fs = require('fs-extra')
-const { getProfile } = require('./get-profile')
-const { getMarkdownFromPost } = require('./generate-md')
-const { addGatsbyFiles } = require('./add-gatsby-files')
-const { exec, withOutputPath } = require('./utils')
+const { getProfile } = require('../lib/get-profile')
+const { getMarkdownFromPost } = require('../lib/generate-md')
+const { addGatsbyFiles } = require('../lib/add-gatsby-files')
+const { exec, withOutputPath } = require('../lib/utils')
 
 // eslint-disable-next-line no-console
 console.log(`    -------------------------
@@ -117,11 +117,12 @@ Happy writing!`)
 
     const remoteURL = repoURL
 
+    // handle if passed a git url
     if (repoURL.match(/^git@github.com:.*/i)) {
-      repoURL = repoURL
-        .replace(/^git@github.com:.*/i, 'https://github.com/')
-        .replace(/\.git$/i, '')
+      repoURL = repoURL.replace(/^git@github.com:.*/i, 'https://github.com/')
     }
+    // handle if passed url ending with .git (GitHub handle both seamlessly)
+    repoURL = repoURL.replace(/\.git$/i, '')
 
     return Promise.all([
       fs
@@ -129,16 +130,16 @@ Happy writing!`)
         .then(content =>
           fs.writeFile(
             withOutputPath(profile, './package.json'),
-            content.replace(/{{ githubURL }}/g, repoURL || ''),
+            content.replace(/{{ githubURL }}/g, repoURL),
             'utf8'
           )
         ),
       fs
-        .readFile(withOutputPath(profile, './gatsby-config.js'), 'utf8')
+        .readFile(withOutputPath(profile, './config.js'), 'utf8')
         .then(content =>
           fs.writeFile(
-            withOutputPath(profile, './gatsby-config.js'),
-            content.replace(/{{ githubURL }}/g, repoURL || ''),
+            withOutputPath(profile, './config.js'),
+            content.replace(/{{ githubURL }}/g, repoURL),
             'utf8'
           )
         ),
@@ -188,15 +189,65 @@ Netlify is hosting your personal project for free.
 
 Netlify probably gave a funny name to your project,
 like friendly-keller-0b06be or something,
-but you can choose one by go to the "Site Settings"
+but you can choose one by going to the "Site Settings"
 and clicking on "Change site name".
+
+5. Copy paste the URL of the Netlify deployment here (not the URL of Netlify dashboard)
 `)
     return inquirer.prompt([
       {
-        name: 'dontCare',
-        message: 'Press enter when you are ready',
+        name: 'publicURL',
+        message: 'URL of the blog',
       },
     ])
+  })
+  .then(({ publicURL }) => {
+    publicURL = publicURL.trim()
+    if (!publicURL) {
+      throw new Error(`
+Looks like the blog's URL is empty.
+You can still use the generated project as a normal Gatsby project.
+
+You will find some information about the generated project in its README.
+
+Happy writing!`)
+    }
+
+    spinner.start("Updating the project to use the blog's URL")
+
+    return fs
+      .readFile(withOutputPath(profile, './config.js'), 'utf8')
+      .then(content =>
+        fs.writeFile(
+          withOutputPath(profile, './config.js'),
+          content.replace(/http:\/\/localhost:8000/g, publicURL),
+          'utf8'
+        )
+      )
+      .then(() =>
+        exec(`git add . && git commit -m "update config to use blog's URL"`, {
+          cwd: withOutputPath(profile),
+        })
+      )
+  })
+  .then(() => {
+    spinner.succeed("Updated the project to use the blog's URL")
+    spinner.stop()
+
+    // eslint-disable-next-line no-console
+    console.log(
+      'Pushing the code for your blog to GitHub (you might be prompted for your GitHub identifiers)...\n'
+    )
+    return new Promise((resolve, reject) => {
+      const child = spawn('git', ['push', 'origin', 'master'], {
+        cwd: withOutputPath(profile),
+        stdio: 'inherit',
+      })
+
+      child.on('error', () => reject())
+      child.on('close', () => resolve())
+      child.on('exit', () => resolve())
+    })
   })
   .then(() => {
     // eslint-disable-next-line no-console
@@ -209,7 +260,7 @@ We created a folder called "${profile.mediumUsername}-blog" with
 everything needed inside.
 
 Your blog posts are in the "content" sub-folder but the first thing
-you will want to edit is the "gatsby-config.js" file. It contains
+you will want to edit is the "config.js" file. It contains
 a few values like your bio or your social media links that you should edit.
 
 Every time you will push to the master branch on GitHub, your blog will be

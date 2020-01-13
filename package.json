@@ -1,33 +1,29 @@
 {
   "name": "medium-to-own-blog",
-  "version": "0.1.11",
+  "version": "0.3.0",
   "description": "Switch from Medium to your own blog in a few minutes",
   "bin": {
-    "medium-to-own-blog": "index.js"
+    "medium-to-own-blog": "bin/medium-to-own-blog.js",
+    "parse-medium-article": "bin/import-medium-article.js"
   },
   "main": "index.js",
   "files": [
     "/gatsby-template",
-    "/add-gatsby-files.js",
-    "/default-icon.png",
-    "/generate-md.js",
-    "/get-profile.js",
-    "/index.js",
-    "/parse-profile.js",
-    "/utils.js"
+    "/bin",
+    "/lib"
   ],
   "scripts": {
-    "test": "node ./index.js"
+    "test": "node ./bin/medium-to-own-blog.js"
   },
   "author": "Mathieu Dutour <mathieu@dutour.me>",
   "license": "MIT",
   "devDependencies": {
     "eslint": "^5.16.0",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-config-prettier": "^4.3.0",
-    "eslint-plugin-import": "^2.17.3",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-prettier": "^3.1.0",
-    "prettier": "^1.17.1"
+    "prettier": "^1.18.2"
   },
   "prettier": {
     "proseWrap": "never",
@@ -36,10 +32,11 @@
     "semi": false
   },
   "dependencies": {
-    "fs-extra": "^8.0.1",
-    "inquirer": "^6.3.1",
-    "jsdom": "^15.1.0",
-    "jszip": "^3.2.1",
+    "fs-extra": "^8.1.0",
+    "inquirer": "^6.5.0",
+    "jimp": "^0.6.4",
+    "jsdom": "^15.1.1",
+    "jszip": "^3.2.2",
     "ora": "^3.4.0",
     "request": "^2.88.0",
     "slugify": "^1.3.4",
